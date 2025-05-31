@@ -16,6 +16,7 @@ read -r -p "(y/n) " answer
 if [[ "$answer" == "y" ]]; then
     echo "To enable dev-mode, first run 'passwd' to set a password, then run 'sudo steamos-devmode enable'"
     echo "After completing run this script again."
+    exit 1
 fi
 
 if [[ ! -f "$XDG_CONFIG_HOME/package-installer/packages.list" ]]; then
