@@ -24,6 +24,7 @@ DRYRUN=1 package-installer
 ## Configuration
 
 The packages to install are listed in ~/.config/package-installer/packages.list
+Both the arch linux and AUR package lists are supported.
 
 Each line in the file should be a package name, e.g.
 
