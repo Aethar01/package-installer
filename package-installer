@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+original_dir=$PWD
+
+# if DRYRUN=1 then don't actually run the commands
+run() {
+    if [[ "$DRYRUN" == "1" ]]; then
+        echo "$@"
+    else
+        "$@"
+    fi
+}
+
+sudo_check() {
+    sudo -v || return 1
+    return 0
+}
+
+echo "Are you on a steam deck?"
+read -r -p "(y/n) " answer
+if [[ "$answer" == "y" ]]; then
+    echo "To install packages on steam deck you need to be able to run sudo commands."
+    echo "Please enter your password to continue."
+    sudo_check || printf "If you see this message, either you aborted the sudo pasword prompt or you cannot run sudo commands. \nIf you are on steam deck and have not set up sudo access run 'passwd' to set your password and try this script again." 
+    echo "To install packages on steam deck you need to disable the read-only filesystem."
+    echo "Do you want to disable the read-only filesystem? (if you have done this since your last update you can skip this step)"
+    read -r -p "(y/n) " answer
+    if [[ "$answer" == "y" ]]; then
+        echo "Disabling read-only filesystem..."
+        run sudo steamos-readonly disable
+        echo "Read-only filesystem disabled."
+        echo "Do you want to initialize the pacman package manager and update the system?"
+        read -r -p "(y/n) " answer
+        if [[ "$answer" == "y" ]]; then
+            echo "Initializing pacman keyring..."
+            run sudo pacman-key --init
+            run sudo pacman-key --populate archlinux
+            echo "Initializing pacman keyring done."
+            echo "Updating system..."
+            run sudo pacman -Syu
+        else echo "Skipping pacman keyring initialization and system update."
+        fi
+    else echo "Skipping read-only filesystem disabling."
+    fi
+fi
+
+if [[ ! -f "$XDG_CONFIG_HOME/my-package-installer/packages.list" ]]; then
+    echo "No packages file found."
+    echo "Please create a file called 'packages.list' in $XDG_CONFIG_HOME/my-package-installer"
+    exit 1
+fi
+
+packages=$(cat "$XDG_CONFIG_HOME/my-package-installer/packages.list")
+
+if [[ -z "yay" ]]; then
+    echo "yay not found. Installing..."
+    run cd /tmp
+    run git clone https://aur.archlinux.org/yay.git
+    run cd yay
+    run makepkg -si
+    run cd $original_dir
+fi
+
+run yay -Syu --needed $packages
